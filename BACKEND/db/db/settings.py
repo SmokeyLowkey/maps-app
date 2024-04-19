@@ -62,7 +62,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    os.getenv('CORS_ALLOWED_ORIGIN'),
+    os.getenv('CORS_ALLOWED_ORIGIN', '').split(','),
 ]
 
 TINYMCE_DEFAULT_CONFIG = {
