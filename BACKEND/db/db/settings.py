@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://maps-app-6w2k.onrender.com']
+ALLOWED_HOSTS = [os.getenv('ALLOWED_HOST')]
 
 
 # Application definition
@@ -62,8 +62,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://localhost:5173',
+    os.getenv('CORS_ALLOWED_ORIGIN'),
 ]
 
 TINYMCE_DEFAULT_CONFIG = {
