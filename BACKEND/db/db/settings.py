@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.awsapprunner.com']
+ALLOWED_HOSTS = ['https://maps-app-6w2k.onrender.com']
 
 
 # Application definition
