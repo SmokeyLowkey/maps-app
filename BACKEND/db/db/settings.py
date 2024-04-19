@@ -61,9 +61,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    os.getenv('CORS_ALLOWED_ORIGIN', '').split(',')
-]
+cors_origins = os.getenv('CORS_ALLOWED_ORIGIN')
+CORS_ALLOWED_ORIGINS = cors_origins.split(',') if cors_origins else []
 
 TINYMCE_DEFAULT_CONFIG = {
     "theme": "silver",
