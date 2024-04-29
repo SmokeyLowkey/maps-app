@@ -3,14 +3,14 @@ import sys
 import django
 import pandas as pd
 
-sys.path.append('C:/NEXT_DASHBOARD_V2/python_back/db')  # Use forward slashes or raw string for path
+sys.path.append('C:/coding projects/maps-app/BACKEND/db')  # Use forward slashes or raw string for path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'db.settings')
 django.setup()
 
 from data.models import BranchData  # Replace with your actual model
 
 # Load the Excel file
-file_path = 'C:/NEXT_DASHBOARD_V2/python_back/db/db/utils/BRANCHES AND LOCATION.xlsx'
+file_path = 'C:/coding projects/maps-app/BACKEND/db/db/utils/BRANCHES AND LOCATION.xlsx'
 sheet_name = 'BRANCH DETAILS'
 
 # Read the Excel sheet into a pandas DataFrame
