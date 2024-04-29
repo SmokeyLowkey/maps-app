@@ -20,6 +20,8 @@ DEBUG = False
 allowed_hosts = os.getenv('ALLOWED_HOSTS')
 ALLOWED_HOSTS = allowed_hosts.split(',') if allowed_hosts else []
 
+# API TOKEN FOR AUTH
+API_TOKEN = os.getenv('API_TOKEN')
 
 # Application definition
 
@@ -41,6 +43,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'db.middleware.token_authentication',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
