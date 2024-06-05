@@ -17,7 +17,7 @@ def generate_presigned_url(request, branch_code):
                              aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
                              region_name=settings.AWS_S3_REGION_NAME)
     # Construct the key for the S3 object
-    object_key = f'models/{branch_code}/{branch_code}.glb'
+    object_key = f'reginaPete/{branch_code}.glb'
     print("Object Key for S3:", object_key)  # Logging the object key
 
     presigned_url = s3_client.generate_presigned_url('get_object', Params={
