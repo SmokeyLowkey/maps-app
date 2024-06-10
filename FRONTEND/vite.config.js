@@ -4,17 +4,18 @@ import react from '@vitejs/plugin-react'
 
 const root = resolve(__dirname, 'src')
 const outDir = resolve(__dirname, 'dist')
-// https://vitejs.dev/config/
+
 export default defineConfig({
   root,
+  base: '/',
   plugins: [react()],
   build:{
     outDir,
-    emptyOutDir:true,
+    emptyOutDir: true,
     rollupOptions:{
-      imput:{
+      input:{
         main: resolve(root, 'index.html'),
-        store: resolve(root, 'store', 'index.html')
+        scene: resolve(root, 'scene/index.html')
       }
     }
   }

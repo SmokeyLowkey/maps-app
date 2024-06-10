@@ -3,11 +3,14 @@ import * as THREE from "three";
 import { useNavigate } from "react-router-dom";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
+import LoadingBar from "../components/LoadingBar"; // Import the LoadingBar component
 
 const VirtualStore = () => {
   const mountRef = useRef(null);
   const [glbUrl, setGlbUrl] = useState("");
   const navigate = useNavigate(); // Initialize useHistory
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingFinished, setLoadingFinished] = useState(false);
 
   const branchCode = window.location.pathname.split("/").pop(); // Extract branch code from URL
 
@@ -46,10 +49,16 @@ const VirtualStore = () => {
     // console.log("PointerLockControls initialized");
 
     // Ensure the Pointer Lock API is supported
-    if (!("pointerLockElement" in document)) {
-      console.error("Pointer Lock API is not supported by your browser.");
-      return;
-    }
+
+    const handlePointerLock = () => {
+      if (loadingFinished) {
+        if (!("pointerLockElement" in document)) {
+          console.error("Pointer Lock API is not supported by your browser.");
+          return;
+        }
+        controls.lock();
+      }
+    };
 
     document.addEventListener("click", () => {
       if (document.body.contains(renderer.domElement)) {
@@ -112,8 +121,12 @@ const VirtualStore = () => {
           }
         });
         scene.add(gltf.scene);
+        setLoadingProgress(100); // Set progress to 100% when loading is complete
+        setLoadingFinished(true); // Mark loading as finished
       },
-      undefined,
+      (xhr) => {
+        setLoadingProgress((xhr.loaded / xhr.total) * 100); // Update progress based on loaded assets
+      },
       (error) => {
         console.error("Error loading GLTF model:", error);
       }
@@ -226,11 +239,12 @@ const VirtualStore = () => {
   return (
     <div ref={mountRef}>
       <button
-        onClick={() => navigate(-1)}
+        onClick={() => navigate("/")}
         style={{ position: "absolute", top: "10px", left: "10px", zIndex: 1 }}
       >
         Back
       </button>
+      {!loadingFinished && <LoadingBar progress={loadingProgress} />}
     </div>
   );
 };

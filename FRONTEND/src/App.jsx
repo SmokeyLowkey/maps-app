@@ -10,8 +10,7 @@ import SearchAddress from "./components/Search";
 import StyleSwitcher from "./components/StyleSwitcher";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useThree } from "@react-three/fiber";
-import VirtualStore from "./store/VirtualStore.jsx";
+import VirtualStore from "./scene/VirtualStore.jsx";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_KEY;
 const baseUrl = import.meta.env.VITE_BASE_URL;
