@@ -2,6 +2,8 @@ import React from 'react';
 import Filter from './Filter';
 
 function NavBar({ activeCodes, onFilterChange, filteredMarkers, onBranchSelect }) {
+  // Sort the filteredMarkers array alphabetically by branchCity
+  const sortedMarkers = [...filteredMarkers].sort((a, b) => a.branchCity.localeCompare(b.branchCity));
   return (
     <div className="navbar">
       <Filter activeCodes={activeCodes} onFilterChange={onFilterChange} />
@@ -11,7 +13,7 @@ function NavBar({ activeCodes, onFilterChange, filteredMarkers, onBranchSelect }
       disabled={activeCodes.length === 0}  // Disable dropdown if no codes are active
       >
         <option value="">Select a Branch...</option>
-        {filteredMarkers.map(marker => (
+        {sortedMarkers.map(marker => (
           <option key={marker.code} value={marker.code}>{marker.branchCity} - {marker.code}</option> // Adjust if your data has different properties
         ))}
       </select>

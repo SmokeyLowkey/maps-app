@@ -2,87 +2,60 @@ import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { useNavigate } from "react-router-dom";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
-import LoadingBar from "../components/LoadingBar"; // Import the LoadingBar component
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import LoadingBar from "../components/LoadingBar";
 
 const VirtualStore = () => {
   const mountRef = useRef(null);
   const [glbUrl, setGlbUrl] = useState("");
-  const navigate = useNavigate(); // Initialize useHistory
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingFinished, setLoadingFinished] = useState(false);
+  const [modelAvailable, setModelAvailable] = useState(true);
+  const navigate = useNavigate();
 
-  const branchCode = window.location.pathname.split("/").pop(); // Extract branch code from URL
-
+  const branchCode = window.location.pathname.split("/").pop();
   const baseUrl = import.meta.env.VITE_BASE_URL;
 
   useEffect(() => {
-    console.log("branch code selected: ", branchCode);
+    let isMounted = true;
     fetch(`${baseUrl}/api/get-signed-url/${branchCode}/`)
       .then((response) => response.json())
       .then((data) => {
-        setGlbUrl(data.url);
+        if (isMounted) {
+          if (data.url) {
+            setGlbUrl(data.url);
+          } else {
+            setModelAvailable(false);
+            setLoadingFinished(true);
+          }
+        }
       })
-      .catch((error) => console.error("Error fetching the URL:", error));
+      .catch((error) => {
+        if (isMounted) {
+          console.error("Error fetching the URL:", error);
+          setModelAvailable(false);
+          setLoadingFinished(true);
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
   }, [branchCode, baseUrl]);
 
   useEffect(() => {
     if (!glbUrl) return;
 
+    let isMounted = true;
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(-1.5, 1.4, -1.5);
-
-    const renderer = new THREE.WebGLRenderer();
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
 
     if (mountRef.current) {
       mountRef.current.appendChild(renderer.domElement);
     }
 
-    const controls = new PointerLockControls(camera, renderer.domElement);
-    // console.log("PointerLockControls initialized");
-
-    // Ensure the Pointer Lock API is supported
-
-    const handlePointerLock = () => {
-      if (loadingFinished) {
-        if (!("pointerLockElement" in document)) {
-          console.error("Pointer Lock API is not supported by your browser.");
-          return;
-        }
-        controls.lock();
-      }
-    };
-
-    document.addEventListener("click", () => {
-      if (document.body.contains(renderer.domElement)) {
-        try {
-          controls.lock();
-        } catch (error) {
-          console.error("Unable to lock pointer: ", error);
-        }
-      } else {
-        console.error("renderer.domElement is not in the document.");
-      }
-    });
-
-    controls.addEventListener("lock", () => {
-      // console.log("Pointer locked");
-    });
-
-    controls.addEventListener("unlock", () => {
-      // console.log("Pointer unlocked");
-    });
-
-    scene.add(controls.getObject());
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Ambient light with half intensity
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
 
     const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -90,154 +63,93 @@ const VirtualStore = () => {
     scene.add(light);
 
     const loader = new GLTFLoader();
-    const objects = [];
-    const collisionObjectsNames = [
-      "store_shelves",
-      "wire_shelves",
-      "wire_shelves001",
-      "wire_shelves002",
-      "Cube053",
-      "Cube053_1",
-      "Cube054",
-      "Cube054_1",
-      "Cube055",
-      "Cube055_1",
-      "Walls001",
-      "Walls002",
-      "Walls003",
-      "Walls004",
-      "Walls005",
-      "Walls006",
-    ];
 
     loader.load(
       glbUrl,
       (gltf) => {
+        if (!isMounted) return;
+        // console.log("Model loaded:", gltf);
         gltf.scene.traverse((child) => {
           if (child.isMesh) {
             child.geometry.computeBoundingBox();
-            child.userData.boundingBox = child.geometry.boundingBox.clone();
-            objects.push(child);
           }
         });
         scene.add(gltf.scene);
-        setLoadingProgress(100); // Set progress to 100% when loading is complete
-        setLoadingFinished(true); // Mark loading as finished
+        setLoadingProgress(100);
+        setLoadingFinished(true);
+
+        // Extract and use the camera from the GLTF file
+        const gltfCamera = gltf.cameras[0];
+        scene.add(gltfCamera);
+
+        // Adjust camera position and orientation
+        gltfCamera.position.set(-15.896516691597187, 9.525770031757578, 26.519444689087567);
+        gltfCamera.lookAt(new THREE.Vector3(0, 0, 0));
+
+        const mixer = new THREE.AnimationMixer(gltf.scene);
+        gltf.animations.forEach((clip) => {
+          mixer.clipAction(clip).play();
+        });
+
+        const clock = new THREE.Clock();
+
+        // Initialize orbit controls
+        const controls = new OrbitControls(gltfCamera, renderer.domElement);
+        controls.enableRotate = false; // Disable rotation
+        controls.enableZoom = true; // Enable zoom
+        controls.enablePan = true; // Enable pan
+        controls.update();
+
+        const animate = () => {
+          if (!isMounted) return;
+          requestAnimationFrame(animate);
+          mixer.update(clock.getDelta());
+          controls.update();
+          renderer.render(scene, gltfCamera);
+          // Log the camera position
+          // console.log(
+            // `Camera Position: x=${gltfCamera.position.x}, y=${gltfCamera.position.y}, z=${gltfCamera.position.z}`
+            // `camera lookat: x=${gltfCamera.lookAt.x},y=${gltfCamera.lookAt.y},z=${gltfCamera.lookAt.z} `
+          // );
+        };
+
+        animate();
       },
       (xhr) => {
-        setLoadingProgress((xhr.loaded / xhr.total) * 100); // Update progress based on loaded assets
+        setLoadingProgress((xhr.loaded / xhr.total) * 100);
+        // console.log(`Loading progress: ${(xhr.loaded / xhr.total) * 100}%`);
       },
       (error) => {
         console.error("Error loading GLTF model:", error);
+        setModelAvailable(false);
+        setLoadingFinished(true);
       }
     );
 
     function onWindowResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      render();
+      if (gltfCamera) {
+        gltfCamera.aspect = window.innerWidth / window.innerHeight;
+        gltfCamera.updateProjectionMatrix();
+      }
     }
 
     window.addEventListener("resize", onWindowResize, false);
 
-    const keyState = {};
-
-    const onKeyDown = (event) => {
-      keyState[event.code] = true;
-      // console.log("Key down: ", event.code);
-    };
-
-    const onKeyUp = (event) => {
-      keyState[event.code] = false;
-      // console.log("Key up: ", event.code);
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("keyup", onKeyUp);
-
-    const moveSpeed = 0.1;
-
-    const raycaster = new THREE.Raycaster();
-    const directions = [
-      new THREE.Vector3(0, 0, -1), // Forward
-      new THREE.Vector3(0, 0, 1), // Backward
-      new THREE.Vector3(-1, 0, 0), // Left
-      new THREE.Vector3(1, 0, 0), // Right
-      new THREE.Vector3(0, -1, 0), // Down
-      new THREE.Vector3(0, 1, 0), // Up
-    ];
-
-    const checkCollisions = (newPosition) => {
-      for (const direction of directions) {
-        raycaster.set(newPosition, direction);
-        const intersects = raycaster.intersectObjects(objects);
-        if (intersects.length > 0 && intersects[0].distance < 0.55) {
-          // console.log("Collision detected with: ", intersects[0].object);
-          return true;
-        }
-      }
-      return false;
-    };
-
-    function render() {
-      renderer.render(scene, camera);
-    }
-
-    const animate = () => {
-      requestAnimationFrame(animate);
-
-      let moveForward = 0,
-        moveRight = 0;
-
-      if (keyState["KeyW"]) moveForward = moveSpeed;
-      if (keyState["KeyS"]) moveForward = -moveSpeed;
-      if (keyState["KeyA"]) moveRight = moveSpeed;
-      if (keyState["KeyD"]) moveRight = -moveSpeed;
-
-      if (moveForward !== 0 || moveRight !== 0) {
-        const direction = new THREE.Vector3();
-        controls.getDirection(direction);
-        direction.y = 0; // Lock the camera's y-axis rotation
-
-        const moveDirection = new THREE.Vector3();
-        if (moveForward !== 0)
-          moveDirection.add(direction.clone().multiplyScalar(moveForward));
-        if (moveRight !== 0) {
-          const right = new THREE.Vector3();
-          right.crossVectors(camera.up, direction).normalize();
-          moveDirection.add(right.multiplyScalar(moveRight));
-        }
-
-        const newPosition = controls
-          .getObject()
-          .position.clone()
-          .add(moveDirection);
-
-        if (!checkCollisions(newPosition)) {
-          controls.getObject().position.copy(newPosition);
-        } else {
-          // console.log("Collision detected, movement blocked.");
-        }
-      }
-
-      render();
-    };
-
-    animate();
-
     return () => {
+      isMounted = false;
       if (mountRef.current) {
         mountRef.current.removeChild(renderer.domElement);
       }
       window.removeEventListener("resize", onWindowResize);
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("keyup", onKeyUp);
     };
   }, [glbUrl]);
 
   return (
-    <div ref={mountRef}>
+    <div
+      ref={mountRef}
+      style={{ width: "100vw", height: "100vh", overflow: "hidden" }}
+    >
       <button
         onClick={() => navigate("/")}
         style={{ position: "absolute", top: "10px", left: "10px", zIndex: 1 }}
@@ -245,6 +157,9 @@ const VirtualStore = () => {
         Back
       </button>
       {!loadingFinished && <LoadingBar progress={loadingProgress} />}
+      {loadingFinished && !modelAvailable && (
+        <div className="coming-soon-banner">Coming Soon</div>
+      )}
     </div>
   );
 };

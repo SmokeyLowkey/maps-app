@@ -23,4 +23,17 @@
     background-color: #4caf50;
     transition: width 0.3s ease;
   }
+
+  .coming-soon-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 2rem;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 10000;
+  }
   
